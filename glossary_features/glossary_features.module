@@ -1,0 +1,114 @@
+<?php
+    // Importamos la interfaz RouteMatchInterface que se utiliza en este módulo.
+    use Drupal\Core\Routing\RouteMatchInterface;
+
+    /**
+     * Definimos una función que acepta una variable $variables por referencia. 
+     * Esta función se ejecutará antes de que se represente el bloque en la página
+     */
+    function glossary_features_preprocess_block(&$variables) {
+        /**
+         * Obtenemos el nodo actual que se está mostrando en la página utilizando 
+         * el servicio \Drupal::routeMatch()
+         */
+        $node = \Drupal::routeMatch()->getParameter('node');
+        /**
+         * Comprobamos si el objeto $node es una instancia de la interfaz NodeInterface
+         */
+        if ($node instanceof \Drupal\node\NodeInterface) {
+            // Cargamos el vocabulario de taxonomía con el identificador "glossary"
+            $vocabulary = \Drupal\taxonomy\Entity\Vocabulary::load('glossary');
+            if ($vocabulary) {
+                // Obtenemos el almacenamiento de entidades para los términos de taxonomía.    
+                $term_storage = \Drupal::entityTypeManager()->getStorage('taxonomy_term');
+                // Cargamos una lista de términos de taxonomía relacionados con el glosario.
+                $terms = $term_storage->loadTree($vocabulary->id());
+                // Creamos un array vacío para almecenar los títulos de los términos de glosario
+                $term_titles = [];
+                // Iteramos sobre la lista de términos de glosario
+                foreach ($terms as $term) {
+                    // Agregamos los titulos al array $term_titles
+                    $term_titles[] = $term->getName();
+                }
+                // Obtenemos el contenido del cuerpo del nodo actual y lo almacenamos en la variable $content.
+                $content = $node->body->value;
+                /**
+                 * Reemplaza todos los títulos de términos de glosario encontrados en el contenido 
+                 * con los tooltips generados por la función glossary_features_create_tooltip
+                 */
+                $content = str_replace($term_titles, array_map('glossary_features_create_tooltip', $term_titles), $content);
+                
+                /**
+                 *  Actualizamos el valor del cuerpo del nodo con el contenido modificado que contiene 
+                 *  los tooltips personalizados.
+                 */ 
+                $node->body->value = $content;
+            }
+        }
+    }
+
+   
+    function glossary_features_create_tooltip($term_title) {
+        // con esto accedemos a los términos de glosario almacenados en Drupal.
+        $term_storage = \Drupal::entityTypeManager()->getStorage('taxonomy_term');
+        // Buscamos el titulo en glosario.
+        $term = $term_storage->loadByProperties(['name' => $term_title]);
+        
+        if ($term) {            
+            // obtenemos el primer término encontrado utilizando la función reset() 
+            $term = reset($term);
+            // obtenemos el valor del campo description del término del glosario
+            $description = $term->get('field_description')->value;
+        
+            // Comprobamos si la longitud de la descripción es mayor a 100 caracteres
+            if (mb_strlen($description) > 100) {
+                /**
+                 * Creamos una versión truncada de la descripción que contenga los
+                 * primeros 100 caracteres seguidos de ... 
+                 */ 
+                $short_description = mb_substr($description, 0, 100) . '...';
+                
+                // Creamos un array que contiene toda la información para renderizar el tooltip
+                $tooltip = [
+                '#type' => 'html_tag',
+                '#tag' => 'span',
+                '#attributes' => [
+                    'class' => 'glossary-tooltip',
+                ],
+                '#value' => $term_title . ' ',
+                '#suffix' => '<a class="glossary-read-more" href="/glossary/' . $term->id() . '">Read more</a>',
+                ];
+                
+
+                /**
+                 * Renderizamos el tooltip y se devuelve como una cadena de HTML
+                 * que se puede mostrar en la página de Drupal.
+                 */
+                return \Drupal::service('renderer')->render($tooltip);
+            }
+        else {
+            // Creamos un array que contiene toda la información para renderizar el tooltip
+            $tooltip = [
+            '#type' => 'html_tag',
+            '#tag' => 'span',
+            '#attributes' => [
+                'class' => 'glossary-tooltip',
+                'data-tooltip' => $description,
+            ],
+            '#value' => $term_title,
+            ];
+            
+            /**
+             * Renderizamos el tooltip y se devuelve como una cadena de HTML
+             * que se puede mostrar en la página de Drupal.
+             */
+            return \Drupal::service('renderer')->render($tooltip);
+        }
+        }
+        
+        /**
+         * Si no se encuentra un término de glosario correspondiente, 
+         * devolvemos el título original como resultado
+         */
+        return $term_title;
+    }

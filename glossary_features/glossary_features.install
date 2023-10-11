@@ -1,0 +1,33 @@
+<?php
+
+function glossary_features_install() {
+  /**
+   * Se crea una nueva instancia de un objeto de vocabulario de taxonomía utilizando
+   * el método create() proporcionado por la clase Vocabulary del módulo de Taxonomía de Drupal.
+   */
+  $vocabulary = \Drupal\taxonomy\Entity\Vocabulary::create([
+    /**
+     * establecemos el identificador del vocabulario (vid) como "glossary". 
+     * Este identificador es único y se utiliza para identificar y referirse al vocabulario
+     * en el sistema.
+     */
+    'vid' => 'glossary',
+    /**
+     * Se establece el nombre del vocabulario (name) como "Glossary". 
+     * Este es el nombre que se mostrará en la interfaz de administración de Drupal.
+     */
+    'name' => 'Glossary',
+    /**
+     * Se proporciona una descripción del vocabulario (description). 
+     * Esta descripción es informativa y proporciona detalles sobre el propósito del vocabulario.
+     */
+    'description' => 'New features for the glossary',
+  ]);
+  /**
+   * Finalmente, se llama al método save() en la instancia de vocabulario ($vocabulary) 
+   * para guardar el nuevo vocabulario en la base de datos de Drupal. 
+   * Esto crea el vocabulario "Glossary" con la descripción especificada en la base de datos
+   * del sitio web de Drupal.
+   */
+  $vocabulary->save();
+}

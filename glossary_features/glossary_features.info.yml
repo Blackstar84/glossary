@@ -1,0 +1,6 @@
+name: 'Glossary Features'
+type: module
+description: 'Add new features to the drupal glossary'
+package: Custom
+core_version_requirement: ^10
+version: 1.0
